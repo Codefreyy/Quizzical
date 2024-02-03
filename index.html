@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <script src="/index.js" type="text/javascript" defer></script>
+    <link rel="stylesheet" type="text/css" href="index.css" />
+  </head>
+  <body>
+    <div class="question-board">
+      <header>
+        <div>
+          <h1>Quizzical</h1>
+          Produced by 230011113 for assessment 1 of CS5003
+          <div>Current User: <span id="username"></span></div>
+        </div>
+        <div class="timer"><span id="count-down">Timer</span></div>
+      </header>
+      <section id="leader-board">
+        <h4>Leader Board</h4>
+        <ol id="leader-board-container"></ol>
+      </section>
+      <section class="status-bar">
+        <div>
+          <span>Correct Answer</span>
+          <div id="correct-answer">0</div>
+        </div>
+
+        <div>
+          <span>Wrong Answer</span>
+          <div id="wrong-answer">0</div>
+        </div>
+
+        <div>
+          <span>Current Score</span>
+          <div id="current-score-container">0</div>
+        </div>
+
+        <div>
+          <span>Best Score</span>
+          <div id="best-score"></div>
+        </div>
+      </section>
+      <section id="question-title">
+        <div id="question-category"></div>
+        <div id="question-text"></div>
+      </section>
+      <section id="options-container">⬇️ Click to start</section>
+      <section id="operation-bar">
+        <button id="start-button">Start Game</button>
+        <button id="next-question-button">Continue</button>
+        <button id="cutHalfWrongButton" disabled>
+          Cut half wrong answers 1 / 1
+        </button>
+        <button id="pause-timer" disabled>Pause timer 1 / 1</button>
+        <button id="quit-button" disabled>Quit game</button>
+        <!-- change user  -->
+      </section>
+    </div>
+  </body>
+</html>

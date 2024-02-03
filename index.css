@@ -1,0 +1,161 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: #f7fbff;
+}
+
+.question-board {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  gap: 15px;
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+  width: 800px;
+  padding: 20px;
+  border-radius: 15px;
+}
+
+.status-bar {
+  display: flex;
+  gap: 20px;
+  padding: 10px 0;
+  border-top: 1px solid #aaa;
+  border-bottom: 1px solid #aaa;
+
+  justify-content: space-between;
+}
+
+.option {
+  cursor: pointer;
+  background-color: #626975;
+  min-height: 40px;
+  line-height: 40px;
+  padding-left: 20px;
+  border-radius: 5px;
+  color: white;
+  border: 1px solid #636974;
+}
+
+#options-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.option:hover {
+  background-color: #f8fbff;
+  color: #636974;
+}
+
+#question {
+  user-select: none;
+}
+
+#error-text {
+  color: red;
+}
+
+#operation-bar {
+  margin-top: 10px;
+  display: flex;
+  gap: 5px;
+}
+
+#start-button {
+  display: block;
+  background-color: #000;
+  color: #f8fbff;
+}
+
+button {
+  border: none;
+  padding: 10px;
+  background-color: #f8fbff;
+  border: 1px solid #aaa;
+  border-radius: 5px;
+  color: #636974;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #636974;
+  color: white;
+}
+
+button:disabled {
+  border: 1px solid gainsboro;
+  color: gainsboro;
+}
+
+button:disabled:hover {
+  cursor: not-allowed;
+  color: gainsboro;
+  background-color: #f8fbff;
+}
+
+#start-button:hover {
+  opacity: 80%;
+}
+
+#next-question-button {
+  display: none;
+}
+
+.timer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #fff;
+  border: 1px solid #aaa;
+  width: 80px;
+  height: 80px;
+  margin: 0 15px;
+  border-radius: 50%;
+}
+
+header {
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+#leader-board {
+  display: none;
+}
+
+#question-title {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+#question-category {
+  background-color: green;
+  color: white;
+  border-radius: 10px;
+  padding: 5px;
+  font-size: 10px;
+  display: none;
+}
+
+ol {
+  overflow-y: scroll;
+  height: 200px;
+}
