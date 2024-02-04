@@ -80,7 +80,7 @@ function init() {
       setTimeout(() => {
         console.log("timer start again!!!!")
         startCountdown(remainingSeconds)
-        pauseTimerBtn.innerText = "Pause timer 0 / 0"
+        pauseTimerBtn.innerText = "Pause timer 0 / 1"
       }, 60 * 1000)
     }
   })
@@ -123,17 +123,23 @@ function init() {
     renderLeaderBoard()
   })
 
-  nextQuestionButton.addEventListener("click", getQuestion)
+  nextQuestionButton.addEventListener("click", () => {
+    getQuestion()
+    if (!isDeleteAnswerUsed) {
+      cutHalfWrongButton.disabled = false
+    }
+
+    if (!isPauseUsed) {
+      pauseTimerBtn.disabled = false
+    }
+  })
   cutHalfWrongButton.addEventListener("click", () => {
     cutHalfWrongButton.disabled = true
     if (!isDeleteAnswerUsed) {
       isDeleteAnswerUsed = true
       // cut half wrong answer
-      const cutRes = cutHalfWrongAnswers(shownAnswerOptions, correctAnswerIndex)
-      if (!cutRes) return
-      correctAnswerIndex = cutRes.correctIndexInShuffled
-      shownAnswerOptions = cutRes.shuffledAnswers
-      renderQuestions(questionText, shownAnswerOptions)
+      const res = cutHalfWrongAnswers(shownAnswerOptions)
+      renderQuestions(questionText, res)
       cutHalfWrongButton.innerHTML = `Cut half wrong answers 0 / 1`
       listenAnswerChoice()
     }
@@ -210,8 +216,8 @@ async function getQuestion() {
   // render the question and answers
   renderQuestions(questionText, shownAnswerOptions)
   listenAnswerChoice()
-  cutHalfWrongButton.disabled = false
-  pauseTimerBtn.disabled = false
+  // cutHalfWrongButton.disabled = false
+  // pauseTimerBtn.disabled = false
   if (timer) {
     clearInterval(timer)
   }
@@ -309,8 +315,6 @@ function checkWrongAnswerNum() {
     })
     startButton.innerHTML = "Start Again"
     startButton.style.display = "block"
-    pauseTimerBtn.disabled = true
-    cutHalfWrongButton.disabled = true
     quitButton.disabled = true
     renderLeaderBoard()
   }
@@ -346,13 +350,13 @@ function resetStatus() {
   currentScoreContainer.innerHTML = 0
   wrongAnswerNum = 0
   wrongAnswerDiv.innerHTML = 0
-  console.log({ wrongAnswerDiv })
   correctAnswerNum = 0
   correctAnswerDiv.innerHTML = 0
   correctAnswerIndex = 0
   currentQuesitonDifficulty = ""
   nextQuestionButton.style.display = "none"
   cutHalfWrongButton.innerHTML = "Cut half wrong answers 1 / 1"
+  pauseTimerBtn.innerHTML = "Pause timer 1 / 1"
   isDeleteAnswerUsed = false
   clearInterval(timer)
 }
@@ -395,17 +399,33 @@ function renderQuestions(questionText, answers) {
   }
 }
 
-function cutHalfWrongAnswers(answers, correctIndex) {
+function cutHalfWrongAnswers(answers) {
   if (!answers || !answers.length) return
+
+  // create wrong answer index array Arr(wrong)
+  // let wrongAnswerIdxArr = answers.map((_, index) => {
+  //   if (index !== correctAnswerIndex) return index
+  // })
+
+  // wrongAnswerIdxArr = wrongAnswerIdxArr.filter((item) => item != null)
+
+  // console.log({ wrongAnswerIdxArr })
+
+  // randomly choose two in the Arr(wrong)
+
+  // remove them from the original array
+
+  // return
+
   if (answers.length == 2) {
     answers = answers.filter((answer, index) => {
-      return index == correctIndex
+      return index == correctAnswerIndex
     })
   }
 
-  const wrongAnswers = answers.filter((_, index) => index !== correctIndex)
-
-  console.log({ wrongAnswers }, { answers }, { correctIndex })
+  const wrongAnswers = answers.filter(
+    (_, index) => index !== correctAnswerIndex
+  )
 
   const numberToRemove = Math.floor(wrongAnswers.length / 2)
   const optionsToRemove = []
@@ -417,16 +437,31 @@ function cutHalfWrongAnswers(answers, correctIndex) {
     }
   }
 
+  console.log(
+    { optionsToRemove },
+    { answers },
+    { correctAnswerIndex },
+    { currentQuestionObj }
+  )
+
+  // optionsToRemove.forEach((index) => {
+  //   wrongAnswers.splice(index, 1)
+  // })
+
   optionsToRemove.forEach((index) => {
-    wrongAnswers.splice(index, 1)
+    answers.splice(index, 1)
   })
 
-  const mergedAnswers = [...wrongAnswers, answers[correctIndex]]
-  const shuffledAnswers = mergedAnswers.sort(() => Math.random() - 0.5)
+  console.log("after answer", answers)
 
-  const correctIndexInShuffled = shuffledAnswers.indexOf(answers[correctIndex])
+  // const mergedAnswers = [...wrongAnswers, answers[correctAnswerIndex]]
+  // const shuffledAnswers = mergedAnswers.sort(() => Math.random() - 0.5)
 
-  return { shuffledAnswers, correctIndexInShuffled }
+  // const correctIndexInShuffled = shuffledAnswers.indexOf(
+  //   answers[correctAnswerIndex]
+  // )
+
+  return answers
 }
 
 function renderLeaderBoard() {
