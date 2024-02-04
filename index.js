@@ -134,7 +134,6 @@ function init() {
       const res = cutHalfWrongAnswers(shownAnswerOptions)
       renderQuestions(questionText, res)
       cutHalfWrongButton.innerHTML = `Cut half wrong answers 0 / 1`
-      listenAnswerChoice()
     }
   })
 }
@@ -205,7 +204,6 @@ async function getQuestion() {
 
   // render the question and answers
   renderQuestions(questionText, shownAnswerOptions)
-  listenAnswerChoice()
   if (timer) {
     clearInterval(timer)
   }
@@ -382,6 +380,8 @@ function renderQuestions(questionText, answers) {
     option.innerText = answers[i]
     optionsContainer.appendChild(option)
   }
+
+  listenAnswerChoice()
 }
 
 function cutHalfWrongAnswers(answers) {
