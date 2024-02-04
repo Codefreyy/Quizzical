@@ -46,7 +46,9 @@ let username
 
 function init() {
   // todo: must input username
-  username = prompt("Please input username...")
+  while (!username) {
+    username = prompt("Please input username...")
+  }
   usernameSpan.innerHTML = username
   if (localStorage.getItem(username)) {
     bestScoreSpan.innerHTML = localStorage.getItem(username)

@@ -138,6 +138,8 @@ header {
 
 #leader-board {
   display: none;
+  max-height: 200px;
+  overflow-y: auto;
 }
 
 #question-title {
