@@ -132,6 +132,8 @@ function init() {
     if (!isPauseUsed) {
       pauseTimerBtn.disabled = false
     }
+
+    nextQuestionButton.style.display = "none"
   })
   cutHalfWrongButton.addEventListener("click", () => {
     cutHalfWrongButton.disabled = true
@@ -246,7 +248,6 @@ function toggleOptionStatus(disableThem = true) {
 
 function handleAnswerClick(optionIndex) {
   clearInterval(timer)
-  console.log("clear interval")
   // const optionIndex = e.target.dataset.index
   const correctOption = document.getElementById(correctAnswerIndex)
   const userChosenOption = document.getElementById(optionIndex)
@@ -402,21 +403,6 @@ function renderQuestions(questionText, answers) {
 function cutHalfWrongAnswers(answers) {
   if (!answers || !answers.length) return
 
-  // create wrong answer index array Arr(wrong)
-  // let wrongAnswerIdxArr = answers.map((_, index) => {
-  //   if (index !== correctAnswerIndex) return index
-  // })
-
-  // wrongAnswerIdxArr = wrongAnswerIdxArr.filter((item) => item != null)
-
-  // console.log({ wrongAnswerIdxArr })
-
-  // randomly choose two in the Arr(wrong)
-
-  // remove them from the original array
-
-  // return
-
   if (answers.length == 2) {
     answers = answers.filter((answer, index) => {
       return index == correctAnswerIndex
@@ -437,29 +423,9 @@ function cutHalfWrongAnswers(answers) {
     }
   }
 
-  console.log(
-    { optionsToRemove },
-    { answers },
-    { correctAnswerIndex },
-    { currentQuestionObj }
-  )
-
-  // optionsToRemove.forEach((index) => {
-  //   wrongAnswers.splice(index, 1)
-  // })
-
   optionsToRemove.forEach((index) => {
     answers.splice(index, 1)
   })
-
-  console.log("after answer", answers)
-
-  // const mergedAnswers = [...wrongAnswers, answers[correctAnswerIndex]]
-  // const shuffledAnswers = mergedAnswers.sort(() => Math.random() - 0.5)
-
-  // const correctIndexInShuffled = shuffledAnswers.indexOf(
-  //   answers[correctAnswerIndex]
-  // )
 
   return answers
 }
