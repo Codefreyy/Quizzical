@@ -25,7 +25,7 @@ const scoreOfDifficulty = new Map([
 ])
 
 // state management
-let currentQuestionObj
+let questionObj
 let questionCategrory
 let questionDifficulty
 let questionText
@@ -34,7 +34,6 @@ let bestScore = 0
 let wrongAnswerNum = 0
 let correctAnswerNum = 0
 let correctAnswerIndex
-let currentQuesitonDifficulty
 let questionCategory
 let isDeleteAnswerUsed = false
 let isPauseUsed = false
@@ -47,21 +46,17 @@ let username
 
 function init() {
   // todo: must input username
-  // while (!username) {
-  //   console.log("init")
   username = prompt("Please input username...")
-  // }
   usernameSpan.innerHTML = username
   if (localStorage.getItem(username)) {
     bestScoreSpan.innerHTML = localStorage.getItem(username)
     bestScore = localStorage.getItem(username)
   }
-
   leaderBoard = JSON.parse(localStorage.getItem("leaderBoard"))
 
   startButton.addEventListener("click", () => {
     getQuestion()
-    resetStatus()
+    // resetStatus()
     leaderBoardSection.style.display = "none"
     startButton.style.display = "none"
     cutHalfWrongButton.disabled = false
@@ -70,7 +65,6 @@ function init() {
   })
 
   pauseTimerBtn.addEventListener("click", () => {
-    console.log("pause timer")
     if (!isPauseUsed) {
       isPauseUsed = true
       clearInterval(timer)
@@ -78,7 +72,6 @@ function init() {
       pauseTimerBtn.disabled = true
 
       setTimeout(() => {
-        console.log("timer start again!!!!")
         startCountdown(remainingSeconds)
         pauseTimerBtn.innerText = "Pause timer 0 / 1"
       }, 60 * 1000)
@@ -97,7 +90,6 @@ function init() {
       !storedBoard ||
       !storedBoard.find((item) => item.username == username)
     ) {
-      console.log({ leaderBoard })
       if (!leaderBoard) {
         leaderBoard = [{ username, score: bestScore }]
       } else {
@@ -105,7 +97,6 @@ function init() {
       }
       localStorage.setItem("leaderBoard", JSON.stringify(leaderBoard))
     } else if (bestScore == currentScore) {
-      console.log("renew")
       leaderBoard.forEach((user) => {
         if (user.username == username) {
           user.score = bestScore
@@ -168,10 +159,8 @@ const renderCountdown = (seconds) => {
 
 const startCountdown = (seconds) => {
   remainingSeconds = seconds
-  console.log("start countdown")
 
   timer = setInterval((_) => {
-    console.log(1)
     if (remainingSeconds > 0) {
       remainingSeconds--
       renderCountdown(remainingSeconds)
@@ -200,16 +189,15 @@ async function getQuestion() {
     `https://quizapi.io/api/v1/questions?limit=1&apiKey=${apiKey}`
   )
   const questionsArr = await data.json()
-  currentQuestionObj = questionsArr[0]
-  console.log({ currentQuestionObj })
-  questionCategory = currentQuestionObj.category
-  questionCategrory = currentQuestionObj?.category
-  questionDifficulty = currentQuestionObj?.difficulty
-  const answers = Object.values(currentQuestionObj.answers)
+  questionObj = questionsArr[0]
+  questionCategory = questionObj.category
+  questionCategrory = questionObj?.category
+  questionDifficulty = questionObj?.difficulty
+  const answers = Object.values(questionObj.answers)
   shownAnswerOptions = answers.filter((item) => item !== null) // all options
-  questionText = currentQuestionObj.question
+  questionText = questionObj.question
 
-  Object.values(currentQuestionObj.correct_answers).forEach((item, index) => {
+  Object.values(questionObj.correct_answers).forEach((item, index) => {
     if (item == "true") {
       correctAnswerIndex = index
     }
@@ -218,8 +206,6 @@ async function getQuestion() {
   // render the question and answers
   renderQuestions(questionText, shownAnswerOptions)
   listenAnswerChoice()
-  // cutHalfWrongButton.disabled = false
-  // pauseTimerBtn.disabled = false
   if (timer) {
     clearInterval(timer)
   }
@@ -233,17 +219,11 @@ function listenAnswerChoice() {
   })
 }
 
-function toggleOptionStatus(disableThem = true) {
-  if (!disableThem) {
-    options.forEach((option) => {
-      option.style.pointerEvents = "auto"
-    })
-  } else {
-    // in case the user chooses the same correct answer and get multiple scores
-    options.forEach((option) => {
-      option.style.pointerEvents = "none"
-    })
-  }
+function disableOptions() {
+  // in case the user chooses the same correct answer and get multiple scores
+  options.forEach((option) => {
+    option.style.pointerEvents = "none"
+  })
 }
 
 function handleAnswerClick(optionIndex) {
@@ -251,7 +231,7 @@ function handleAnswerClick(optionIndex) {
   // const optionIndex = e.target.dataset.index
   const correctOption = document.getElementById(correctAnswerIndex)
   const userChosenOption = document.getElementById(optionIndex)
-  toggleOptionStatus()
+  disableOptions()
   highlightOption(userChosenOption)
   highlightOption(correctOption, true)
 
@@ -293,7 +273,6 @@ function checkWrongAnswerNum() {
       }
       localStorage.setItem("leaderBoard", JSON.stringify(leaderBoard))
     } else if (bestScore == currentScore) {
-      console.log("renew")
       leaderBoard.forEach((user) => {
         if (user.username == username) {
           user.score = bestScore
@@ -314,12 +293,11 @@ function checkWrongAnswerNum() {
       // ensure that the display property is set after other changes in the DOM have taken effect
       nextQuestionButton.style.display = "none"
     })
-    startButton.innerHTML = "Start Again"
-    startButton.style.display = "block"
-    quitButton.disabled = true
+    resetStatus()
     renderLeaderBoard()
   }
 }
+
 function updateSuccessStatus() {
   correctAnswerNum += 1
   currentScore += scoreOfDifficulty.get(questionDifficulty)
@@ -335,30 +313,38 @@ function updateFailStatus() {
 function resetStatus() {
   optionsContainer.innerHTML = "⬇️ Click to start"
   questionTextContainer.innerHTML = ""
-
-  currentQuestionObj = {}
-  shownAnswerOptions = []
-
-  cutHalfWrongButton.disabled = true
-  pauseTimerBtn.disabled = true
-  startButton.style.display = "block"
-  startButton.innerHTML = "Start Game"
   questionCategoryDiv.style.display = "none"
-  quitButton.disabled = true
+
   questionCategrory = ""
   questionDifficulty = ""
+  questionObj = {}
+  shownAnswerOptions = []
+
   currentScore = 0
   currentScoreContainer.innerHTML = 0
+
   wrongAnswerNum = 0
   wrongAnswerDiv.innerHTML = 0
+
   correctAnswerNum = 0
   correctAnswerDiv.innerHTML = 0
   correctAnswerIndex = 0
-  currentQuesitonDifficulty = ""
+
+  // buttons
+  cutHalfWrongButton.disabled = true
+  pauseTimerBtn.disabled = true
+
+  startButton.style.display = "block"
+  startButton.innerHTML = "Start Game"
+
+  quitButton.disabled = true
   nextQuestionButton.style.display = "none"
   cutHalfWrongButton.innerHTML = "Cut half wrong answers 1 / 1"
   pauseTimerBtn.innerHTML = "Pause timer 1 / 1"
+
   isDeleteAnswerUsed = false
+  isPauseUsed = false
+
   clearInterval(timer)
 }
 
@@ -386,15 +372,13 @@ function renderQuestions(questionText, answers) {
   } else {
     questionCategoryDiv.style.display = "none"
   }
-  console.log({ questionCategoryDiv })
   questionTextContainer.innerHTML =
-    questionText + ` (${currentQuestionObj.difficulty})`
+    questionText + ` (${questionObj.difficulty})`
   for (let i = 0; i < answers.length; i++) {
     const option = document.createElement("div")
     option.setAttribute("class", "option")
     option.setAttribute("id", i)
     option.setAttribute("role", "button")
-    option.setAttribute("data-index", i)
     option.innerText = answers[i]
     optionsContainer.appendChild(option)
   }
@@ -441,8 +425,6 @@ function renderLeaderBoard() {
   leaderBoard.sort((a, b) => b.score - a.score)
 
   const displayBoard = leaderBoard.slice(0, 11)
-
-  console.log({ displayBoard })
 
   displayBoard.forEach((user) => {
     const li = document.createElement("li")
