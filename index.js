@@ -45,7 +45,6 @@ let timer
 let username
 
 function init() {
-  // todo: must input username
   while (!username) {
     username = prompt("Please input username...")
   }
@@ -56,9 +55,9 @@ function init() {
   }
   leaderBoard = JSON.parse(localStorage.getItem("leaderBoard"))
 
-  startButton.addEventListener("click", () => {
-    getQuestion()
-    // resetStatus()
+  startButton.addEventListener("click", async () => {
+    await getQuestion()
+    renderQuestions(questionText, shownAnswerOptions)
     leaderBoardSection.style.display = "none"
     startButton.style.display = "none"
     cutHalfWrongButton.disabled = false
@@ -116,8 +115,9 @@ function init() {
     renderLeaderBoard()
   })
 
-  nextQuestionButton.addEventListener("click", () => {
-    getQuestion()
+  nextQuestionButton.addEventListener("click", async () => {
+    await getQuestion()
+    renderQuestions(questionText, shownAnswerOptions)
     if (!isDeleteAnswerUsed) {
       cutHalfWrongButton.disabled = false
     }
@@ -165,7 +165,7 @@ const startCountdown = (seconds) => {
     if (remainingSeconds > 0) {
       remainingSeconds--
       renderCountdown(remainingSeconds)
-      setTimeout(() => {
+      setTimeout(async () => {
         // alert after dom updated to 0
         if (remainingSeconds == 0) {
           wrongAnswerNum += 1
@@ -173,7 +173,8 @@ const startCountdown = (seconds) => {
           checkWrongAnswerNum()
 
           if (wrongAnswerNum < 3) {
-            getQuestion()
+            await getQuestion()
+            renderQuestions(questionText, shownAnswerOptions)
           }
         }
       })
