@@ -23,6 +23,10 @@ const leaderBoardSection = document.getElementById("leader-board")
 const questionCategoryDiv = document.getElementById("question-category")
 const bonusCategoryDiv = document.getElementById("bonus-category")
 
+const categoriesNumberForBonus = 4
+const wrongAnswerCeilNumber = 3
+const countDownTime = 30
+
 const alreadyFetchedQId = []
 
 let options
@@ -49,7 +53,6 @@ let bonusCategory
 let isDeleteAnswerUsed = false
 let isPauseUsed = false
 let shownAnswerOptions
-const countDownTime = 30
 let remainingSeconds
 let leaderBoard = []
 let timer
@@ -86,7 +89,7 @@ If you input other number, we regard it as you give up the chance of bonus score
     `
   )
   bonusCategory = categorySet[userChoiceForBonus - 1]
-  bonusCategoryDiv.innerHTML = bonusCategory
+  bonusCategoryDiv.textContent = bonusCategory
     ? `Bonus Category: ${bonusCategory}`
     : ""
   // startButton is disabled before we get the choice from user
@@ -96,7 +99,7 @@ If you input other number, we regard it as you give up the chance of bonus score
 async function fetchRandomCategories() {
   const categorySet = new Set()
 
-  while (categorySet.size < 4) {
+  while (categorySet.size < categoriesNumberForBonus) {
     const res = await fetch(
       `https://quizapi.io/api/v1/questions?limit=8&apiKey=${apiKey}`
     )
@@ -116,12 +119,12 @@ function getUserName() {
   while (!username) {
     username = prompt("Please input username...")
   }
-  usernameSpan.innerHTML = username
+  usernameSpan.textContent = username
 }
 
 function fetchLocalScores() {
   if (localStorage.getItem(username)) {
-    bestScoreSpan.innerHTML = localStorage.getItem(username)
+    bestScoreSpan.textContent = localStorage.getItem(username)
     bestScore = localStorage.getItem(username)
   }
   leaderBoard = JSON.parse(localStorage.getItem("leaderBoard"))
@@ -154,7 +157,7 @@ const startCountdown = (seconds) => {
         // alert after dom updated to 0
         if (remainingSeconds == 0) {
           wrongAnswerNum += 1
-          wrongAnswerDiv.innerHTML = wrongAnswerNum
+          wrongAnswerDiv.textContent = wrongAnswerNum
           checkWrongAnswerNum()
 
           if (wrongAnswerNum < 3) {
@@ -168,35 +171,6 @@ const startCountdown = (seconds) => {
 
   renderCountdown(remainingSeconds)
 }
-
-// function chooseQuestionDifficulty() {
-//   const difficultyText = [...scoreOfDifficulty.keys()]
-//   console.log({ difficultyText })
-//   chooseNextDifficultySection.innerHTML = ""
-//   difficultyText.forEach((text) => {
-//     const difficultyButton = document.createElement("button")
-//     difficultyButton.setAttribute("id", "difficulty-button")
-//     difficultyButton.innerHTML = text
-//     chooseNextDifficultySection.appendChild(difficultyButton)
-//   })
-
-//   const diffButtons = document.querySelectorAll("#difficulty-button")
-//   diffButtons.forEach((btn) => {
-//     btn.addEventListener("click", (e) => {
-//       handleClickNextDifficulty(e)
-//     })
-//   })
-
-//   function handleClickNextDifficulty(e) {
-//     nextQdifficultyParam = e.target.innerHTML
-//     e.target.style.backgroundColor = "black"
-//     e.target.style.color = "white"
-//     questionTextContainer.style.display = "block"
-//     optionsContainer.style.display = "block"
-
-//     diffButtons.forEach((button) => (button.pointerEvents = "none"))
-//   }
-// }
 
 async function getQuestion() {
   let data
@@ -235,8 +209,6 @@ async function getQuestion() {
   const answers = Object.values(questionObj.answers)
   shownAnswerOptions = answers.filter((item) => item !== null) // all options
   questionText = questionObj.question
-
-  console.log({ correctAnswerIndex })
 
   // render the question and answers
   renderQuestions(questionText, shownAnswerOptions)
@@ -287,7 +259,7 @@ function handleAnswerClick(optionIndex) {
 }
 
 function checkWrongAnswerNum() {
-  if (wrongAnswerNum >= 3) {
+  if (wrongAnswerNum >= wrongAnswerCeilNumber) {
     alert(
       "Game over! You have answered three questions wrong. Your score has been cleared."
     )
@@ -295,7 +267,7 @@ function checkWrongAnswerNum() {
     currentScore = 0
 
     bestScore = Math.max(bestScore, currentScore)
-    bestScoreSpan.innerHTML = bestScore
+    bestScoreSpan.textContent = bestScore
     localStorage.setItem(username, bestScore)
 
     if (!localStorage.getItem("leaderBoard")) {
@@ -320,7 +292,7 @@ function checkWrongAnswerNum() {
       localStorage.setItem("leaderBoard", JSON.stringify(board))
     }
 
-    currentScoreContainer.innerHTML = currentScore
+    currentScoreContainer.textContent = currentScore
 
     setTimeout(() => {
       // ensure that the display property is set after other changes in the DOM have taken effect
@@ -340,18 +312,18 @@ function updateSuccessStatus() {
   } else {
     currentScore += scoreOfDifficulty.get(questionDifficulty)
   }
-  currentScoreContainer.innerHTML = currentScore
-  correctAnswerDiv.innerHTML = correctAnswerNum
+  currentScoreContainer.textContent = currentScore
+  correctAnswerDiv.textContent = correctAnswerNum
 }
 
 function updateFailStatus() {
   wrongAnswerNum += 1
-  wrongAnswerDiv.innerHTML = wrongAnswerNum
+  wrongAnswerDiv.textContent = wrongAnswerNum
 }
 
 function resetStatus() {
-  optionsContainer.innerHTML = "⬇️ Click to start"
-  questionTextContainer.innerHTML = ""
+  optionsContainer.textContent = "⬇️ Click to start"
+  questionTextContainer.textContent = ""
   questionCategoryDiv.style.display = "none"
 
   questionCategrory = ""
@@ -360,13 +332,13 @@ function resetStatus() {
   shownAnswerOptions = []
 
   currentScore = 0
-  currentScoreContainer.innerHTML = 0
+  currentScoreContainer.textContent = 0
 
   wrongAnswerNum = 0
-  wrongAnswerDiv.innerHTML = 0
+  wrongAnswerDiv.textContent = 0
 
   correctAnswerNum = 0
-  correctAnswerDiv.innerHTML = 0
+  correctAnswerDiv.textContent = 0
   correctAnswerIndex = 0
 
   // buttons
@@ -374,13 +346,13 @@ function resetStatus() {
   pauseTimerBtn.disabled = true
 
   startButton.style.display = "block"
-  startButton.innerHTML = "Start Game"
+  startButton.textContent = "Start Game"
 
   quitButton.disabled = true
   nextDifficultyChoser.style.display = "none"
 
-  cutHalfWrongButton.innerHTML = "Cut half wrong answers 1 / 1"
-  pauseTimerBtn.innerHTML = "Pause timer 1 / 1"
+  cutHalfWrongButton.textContent = "Cut half wrong answers 1 / 1"
+  pauseTimerBtn.textContent = "Pause timer 1 / 1"
 
   isDeleteAnswerUsed = false
   isPauseUsed = false
@@ -404,15 +376,15 @@ function highlightOption(option, isCorrect = false) {
 
 function renderQuestions(questionText, answers) {
   // clear last question content
-  questionTextContainer.innerHTML = ""
+  questionTextContainer.textContent = ""
   optionsContainer.innerHTML = ""
   if (questionCategory) {
-    questionCategoryDiv.innerHTML = questionCategory
+    questionCategoryDiv.textContent = questionCategory
     questionCategoryDiv.style.display = "block"
   } else {
     questionCategoryDiv.style.display = "none"
   }
-  questionTextContainer.innerHTML =
+  questionTextContainer.textContent =
     questionText + ` (${questionObj.difficulty})`
   for (let i = 0; i < answers.length; i++) {
     const option = document.createElement("div")
@@ -479,10 +451,10 @@ function renderLeaderBoard() {
 
   displayBoard.forEach((user) => {
     const li = document.createElement("li")
-    li.innerHTML = `${user.username}: ${user.score}`
+    li.textContent = `${user.username}: ${user.score}`
     if (user.username == username) {
       li.style.color = "green"
-      li.innerHTML = `${user.username}: ${user.score} (You)`
+      li.textContent = `${user.username}: ${user.score} (You)`
     }
     leaderBoardOl.appendChild(li)
   })
@@ -502,7 +474,7 @@ function handlePauseBtnClick() {
   if (!isPauseUsed) {
     isPauseUsed = true
     clearInterval(timer)
-    pauseTimerBtn.innerHTML = "Pause timer 0 / 1"
+    pauseTimerBtn.textContent = "Pause timer 0 / 1"
     pauseTimerBtn.disabled = true
 
     setTimeout(() => {
@@ -515,7 +487,7 @@ function handlePauseBtnClick() {
 function handleQuitBtnClick() {
   alert("Game over")
   bestScore = Math.max(bestScore, currentScore)
-  bestScoreSpan.innerHTML = bestScore
+  bestScoreSpan.textContent = bestScore
   localStorage.setItem(username, bestScore)
 
   const storedBoard = JSON.parse(localStorage.getItem("leaderBoard"))
@@ -567,6 +539,6 @@ async function handleCutWrongBtnClick() {
     // cut half wrong answer
     const res = cutHalfWrongAnswers(shownAnswerOptions)
     renderQuestions(questionText, res)
-    cutHalfWrongButton.innerHTML = `Cut half wrong answers 0 / 1`
+    cutHalfWrongButton.textContent = `Cut half wrong answers 0 / 1`
   }
 }
