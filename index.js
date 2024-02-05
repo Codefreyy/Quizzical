@@ -1,3 +1,6 @@
+// change it to your own apiKey, you can get it from https://quizapi.io/docs/1.0/overview#request-parameters
+const apiKey = "mzlGGLJ2ByLHPgC1cYYPqkSgQER3zJsfjL1eDQXK"
+
 // get dom elements
 const questionTextContainer = document.getElementById("question-text")
 const optionsContainer = document.getElementById("options-container")
@@ -15,6 +18,11 @@ const bestScoreSpan = document.getElementById("best-score")
 const leaderBoardOl = document.getElementById("leader-board-container")
 const leaderBoardSection = document.getElementById("leader-board")
 const questionCategoryDiv = document.getElementById("question-category")
+const bonusCategoryDiv = document.getElementById("bonus-category")
+const chooseNextDifficultySection = document.getElementById(
+  "choose-next-difficulty"
+)
+
 let options
 
 // constants
@@ -35,6 +43,7 @@ let wrongAnswerNum = 0
 let correctAnswerNum = 0
 let correctAnswerIndex
 let questionCategory
+let bonusCategory
 let isDeleteAnswerUsed = false
 let isPauseUsed = false
 let shownAnswerOptions
@@ -43,10 +52,12 @@ let remainingSeconds
 let leaderBoard = []
 let timer
 let username
+let nextQdifficultyParam = ""
 
-function init() {
+async function init() {
   getUserName()
   fetchLocalScores()
+  await getBonusCategory()
 
   startButton.addEventListener("click", handleStartBtnClick)
   pauseTimerBtn.addEventListener("click", handlePauseBtnClick)
@@ -56,6 +67,44 @@ function init() {
 }
 
 init()
+
+async function getBonusCategory() {
+  const categorySet = await fetchRandomCategories()
+  userChoiceForBonus = prompt(
+    `Please choose your bonus category from below using number 1, 2, 3, 4. If you answer this category of questions correctly, you will receive double points.
+
+    1. ${categorySet[0]}
+    2. ${categorySet[1]}
+    3. ${categorySet[2]}
+    4. ${categorySet[3]}
+
+If you input other number, we regard it as you give up the chance of bonus score.
+    `
+  )
+  bonusCategory = categorySet[userChoiceForBonus - 1]
+  bonusCategoryDiv.innerHTML = `Bonus Category: ${bonusCategory}`
+  // startButton is disabled before we get the choice from user
+  startButton.disabled = false
+}
+
+async function fetchRandomCategories() {
+  const categorySet = new Set()
+
+  while (categorySet.size < 4) {
+    const res = await fetch(
+      `https://quizapi.io/api/v1/questions?limit=8&apiKey=${apiKey}`
+    )
+    const data = await res.json()
+    console.log({ data })
+    data.forEach((question) => {
+      if (question.category) {
+        console.log(question.category)
+        categorySet.add(question.category)
+      }
+    })
+  }
+  return Array.from(categorySet)
+}
 
 function getUserName() {
   while (!username) {
@@ -114,16 +163,29 @@ const startCountdown = (seconds) => {
   renderCountdown(remainingSeconds)
 }
 
+function chooseQuestionDifficulty() {
+  const difficultyText = [...scoreOfDifficulty.keys()]
+  console.log({ difficultyText })
+  chooseQuestionDifficulty.innerHTML = ""
+  difficultyText.forEach((text) => {
+    const difficultyButton = document.createElement("button")
+    difficultyButton.innerHTML = text
+    difficultyButton.addEventListener("click", (e) => {
+      nextQdifficultyParam = e.target.innerHTML
+    })
+    chooseNextDifficultySection.appendChild(difficultyButton)
+  })
+}
+
 async function getQuestion() {
-  // change it to your own apiKey, you can get it from https://quizapi.io/docs/1.0/overview#request-parameters
-  const apiKey = "mzlGGLJ2ByLHPgC1cYYPqkSgQER3zJsfjL1eDQXK"
+  chooseQuestionDifficulty()
   let data
   let flag = 0
   let questionsArr
   while (!flag) {
     try {
       data = await fetch(
-        `https://quizapi.io/api/v1/questions?limit=1&apiKey=${apiKey}`
+        `https://quizapi.io/api/v1/questions?limit=1&difficulty=${nextQdifficultyParam}&apiKey=${apiKey}`
       )
       questionsArr = await data.json()
       let correctAnswerNumber = 0
@@ -247,7 +309,12 @@ function checkWrongAnswerNum() {
 
 function updateSuccessStatus() {
   correctAnswerNum += 1
-  currentScore += scoreOfDifficulty.get(questionDifficulty)
+  if (questionCategrory == bonusCategory) {
+    const addScore = scoreOfDifficulty.get(questionDifficulty) * 2
+    currentScore += addScore
+  } else {
+    currentScore += scoreOfDifficulty.get(questionDifficulty)
+  }
   currentScoreContainer.innerHTML = currentScore
   correctAnswerDiv.innerHTML = correctAnswerNum
 }
@@ -381,7 +448,8 @@ function renderLeaderBoard() {
 
   leaderBoard.sort((a, b) => b.score - a.score)
 
-  const displayBoard = leaderBoard.slice(0, 11)
+  console.log({ leaderBoard })
+  const displayBoard = leaderBoard.slice(0, 10)
 
   displayBoard.forEach((user) => {
     const li = document.createElement("li")

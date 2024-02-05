@@ -60,6 +60,8 @@ body {
 }
 
 .option:hover {
+  transform: scale(1.02);
+  transition: all 0.5;
   background-color: #f8fbff;
   color: #636974;
 }
@@ -122,7 +124,7 @@ button:disabled:hover {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #fff;
+  background: #f8fbff;
   border: 1px solid #aaa;
   width: 80px;
   height: 80px;
@@ -138,7 +140,7 @@ header {
 
 #leader-board {
   display: none;
-  max-height: 200px;
+  max-height: 250px;
   overflow-y: auto;
 }
 
@@ -157,7 +159,7 @@ header {
   display: none;
 }
 
-ol {
-  overflow-y: scroll;
-  height: 200px;
+#choose-next-difficulty {
+  display: flex;
+  gap: 5px;
 }

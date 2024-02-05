@@ -15,6 +15,7 @@
           <h1>Quizzical</h1>
           Produced by 230011113 for assessment 1 of CS5003
           <div>Current User: <span id="username"></span></div>
+          <div id="bonus-category">Bonus Category:</div>
         </div>
         <div class="timer"><span id="count-down">Timer</span></div>
       </header>
@@ -48,8 +49,9 @@
         <div id="question-text"></div>
       </section>
       <section id="options-container">⬇️ Click to start</section>
+      <section id="choose-next-difficulty"></section>
       <section id="operation-bar">
-        <button id="start-button">Start Game</button>
+        <button id="start-button" disabled>Start Game</button>
         <button id="next-question-button">Continue</button>
         <button id="cutHalfWrongButton" disabled>
           Cut half wrong answers 1 / 1
