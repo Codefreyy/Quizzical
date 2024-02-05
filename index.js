@@ -45,102 +45,32 @@ let timer
 let username
 
 function init() {
+  getUserName()
+  fetchLocalScores()
+
+  startButton.addEventListener("click", handleStartBtnClick)
+  pauseTimerBtn.addEventListener("click", handlePauseBtnClick)
+  quitButton.addEventListener("click", handleQuitBtnClick)
+  nextQuestionButton.addEventListener("click", handleContinueBtnClick)
+  cutHalfWrongButton.addEventListener("click", handleCutWrongBtnClick)
+}
+
+init()
+
+function getUserName() {
   while (!username) {
     username = prompt("Please input username...")
   }
   usernameSpan.innerHTML = username
+}
+
+function fetchLocalScores() {
   if (localStorage.getItem(username)) {
     bestScoreSpan.innerHTML = localStorage.getItem(username)
     bestScore = localStorage.getItem(username)
   }
   leaderBoard = JSON.parse(localStorage.getItem("leaderBoard"))
-
-  startButton.addEventListener("click", async () => {
-    await getQuestion()
-    renderQuestions(questionText, shownAnswerOptions)
-    leaderBoardSection.style.display = "none"
-    startButton.style.display = "none"
-    cutHalfWrongButton.disabled = false
-    pauseTimerBtn.disabled = false
-    quitButton.disabled = false
-  })
-
-  pauseTimerBtn.addEventListener("click", () => {
-    if (!isPauseUsed) {
-      isPauseUsed = true
-      clearInterval(timer)
-      pauseTimerBtn.innerHTML = "Pause timer 0 / 1"
-      pauseTimerBtn.disabled = true
-
-      setTimeout(() => {
-        startCountdown(remainingSeconds)
-        pauseTimerBtn.innerText = "Pause timer 0 / 1"
-      }, 60 * 1000)
-    }
-  })
-
-  quitButton.addEventListener("click", () => {
-    alert("Game over")
-    bestScore = Math.max(bestScore, currentScore)
-    bestScoreSpan.innerHTML = bestScore
-    localStorage.setItem(username, bestScore)
-
-    const storedBoard = JSON.parse(localStorage.getItem("leaderBoard"))
-
-    if (
-      !storedBoard ||
-      !storedBoard.find((item) => item.username == username)
-    ) {
-      if (!leaderBoard) {
-        leaderBoard = [{ username, score: bestScore }]
-      } else {
-        leaderBoard.push({ username, score: bestScore })
-      }
-      localStorage.setItem("leaderBoard", JSON.stringify(leaderBoard))
-    } else if (bestScore == currentScore) {
-      leaderBoard.forEach((user) => {
-        if (user.username == username) {
-          user.score = bestScore
-        }
-      })
-      let board = JSON.parse(localStorage.getItem("leaderBoard"))
-      board.forEach((item) => {
-        if (item.username == username) {
-          item.score = bestScore
-        }
-      })
-      localStorage.setItem("leaderBoard", JSON.stringify(board))
-    }
-    resetStatus()
-    renderLeaderBoard()
-  })
-
-  nextQuestionButton.addEventListener("click", async () => {
-    await getQuestion()
-    renderQuestions(questionText, shownAnswerOptions)
-    if (!isDeleteAnswerUsed) {
-      cutHalfWrongButton.disabled = false
-    }
-
-    if (!isPauseUsed) {
-      pauseTimerBtn.disabled = false
-    }
-
-    nextQuestionButton.style.display = "none"
-  })
-  cutHalfWrongButton.addEventListener("click", () => {
-    cutHalfWrongButton.disabled = true
-    if (!isDeleteAnswerUsed) {
-      isDeleteAnswerUsed = true
-      // cut half wrong answer
-      const res = cutHalfWrongAnswers(shownAnswerOptions)
-      renderQuestions(questionText, res)
-      cutHalfWrongButton.innerHTML = `Cut half wrong answers 0 / 1`
-    }
-  })
 }
-
-init()
 
 // count down https://medium.com/weekly-webtips/creating-a-precise-countdown-with-vanilla-js-cdc44c0483fa
 const formatMinutesSeconds = (seconds) => {
@@ -438,4 +368,86 @@ function renderLeaderBoard() {
     }
     leaderBoardOl.appendChild(li)
   })
+}
+
+async function handleStartBtnClick() {
+  await getQuestion()
+  renderQuestions(questionText, shownAnswerOptions)
+  leaderBoardSection.style.display = "none"
+  startButton.style.display = "none"
+  cutHalfWrongButton.disabled = false
+  pauseTimerBtn.disabled = false
+  quitButton.disabled = false
+}
+
+function handlePauseBtnClick() {
+  if (!isPauseUsed) {
+    isPauseUsed = true
+    clearInterval(timer)
+    pauseTimerBtn.innerHTML = "Pause timer 0 / 1"
+    pauseTimerBtn.disabled = true
+
+    setTimeout(() => {
+      startCountdown(remainingSeconds)
+      pauseTimerBtn.innerText = "Pause timer 0 / 1"
+    }, 60 * 1000)
+  }
+}
+
+function handleQuitBtnClick() {
+  alert("Game over")
+  bestScore = Math.max(bestScore, currentScore)
+  bestScoreSpan.innerHTML = bestScore
+  localStorage.setItem(username, bestScore)
+
+  const storedBoard = JSON.parse(localStorage.getItem("leaderBoard"))
+
+  if (!storedBoard || !storedBoard.find((item) => item.username == username)) {
+    if (!leaderBoard) {
+      leaderBoard = [{ username, score: bestScore }]
+    } else {
+      leaderBoard.push({ username, score: bestScore })
+    }
+    localStorage.setItem("leaderBoard", JSON.stringify(leaderBoard))
+  } else if (bestScore == currentScore) {
+    leaderBoard.forEach((user) => {
+      if (user.username == username) {
+        user.score = bestScore
+      }
+    })
+    let board = JSON.parse(localStorage.getItem("leaderBoard"))
+    board.forEach((item) => {
+      if (item.username == username) {
+        item.score = bestScore
+      }
+    })
+    localStorage.setItem("leaderBoard", JSON.stringify(board))
+  }
+  resetStatus()
+  renderLeaderBoard()
+}
+
+async function handleContinueBtnClick() {
+  await getQuestion()
+  renderQuestions(questionText, shownAnswerOptions)
+  if (!isDeleteAnswerUsed) {
+    cutHalfWrongButton.disabled = false
+  }
+
+  if (!isPauseUsed) {
+    pauseTimerBtn.disabled = false
+  }
+
+  nextQuestionButton.style.display = "none"
+}
+
+async function handleCutWrongBtnClick() {
+  cutHalfWrongButton.disabled = true
+  if (!isDeleteAnswerUsed) {
+    isDeleteAnswerUsed = true
+    // cut half wrong answer
+    const res = cutHalfWrongAnswers(shownAnswerOptions)
+    renderQuestions(questionText, res)
+    cutHalfWrongButton.innerHTML = `Cut half wrong answers 0 / 1`
+  }
 }
