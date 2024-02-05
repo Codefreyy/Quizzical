@@ -117,11 +117,33 @@ const startCountdown = (seconds) => {
 async function getQuestion() {
   // change it to your own apiKey, you can get it from https://quizapi.io/docs/1.0/overview#request-parameters
   const apiKey = "mzlGGLJ2ByLHPgC1cYYPqkSgQER3zJsfjL1eDQXK"
-  const data = await fetch(
-    `https://quizapi.io/api/v1/questions?limit=1&apiKey=${apiKey}`
-  )
-  const questionsArr = await data.json()
+  let data
+  let flag = 0
+  let questionsArr
+  while (!flag) {
+    try {
+      data = await fetch(
+        `https://quizapi.io/api/v1/questions?limit=1&apiKey=${apiKey}`
+      )
+      questionsArr = await data.json()
+      let correctAnswerNumber = 0
+      Object.values(questionsArr[0].correct_answers).forEach((item, index) => {
+        if (item == "true") {
+          correctAnswerIndex = index
+          correctAnswerNumber += 1
+        }
+      })
+
+      if (correctAnswerNumber === 1) {
+        flag = 1
+      }
+    } catch (error) {
+      console.error("Error fetching the question:", error)
+    }
+  }
+
   questionObj = questionsArr[0]
+  console.log({ questionObj })
   questionCategory = questionObj.category
   questionCategrory = questionObj?.category
   questionDifficulty = questionObj?.difficulty
@@ -129,11 +151,7 @@ async function getQuestion() {
   shownAnswerOptions = answers.filter((item) => item !== null) // all options
   questionText = questionObj.question
 
-  Object.values(questionObj.correct_answers).forEach((item, index) => {
-    if (item == "true") {
-      correctAnswerIndex = index
-    }
-  })
+  console.log({ correctAnswerIndex })
 
   // render the question and answers
   renderQuestions(questionText, shownAnswerOptions)
@@ -159,12 +177,10 @@ function disableOptions() {
 
 function handleAnswerClick(optionIndex) {
   clearInterval(timer)
-  // const optionIndex = e.target.dataset.index
   const correctOption = document.getElementById(correctAnswerIndex)
   const userChosenOption = document.getElementById(optionIndex)
   disableOptions()
   highlightOption(userChosenOption)
-  highlightOption(correctOption, true)
 
   // user chose correct answer
   if (optionIndex == correctAnswerIndex) {
@@ -321,28 +337,36 @@ function cutHalfWrongAnswers(answers) {
   if (!answers || !answers.length) return
 
   if (answers.length == 2) {
-    answers = answers.filter((answer, index) => {
+    answers = answers.filter((_, index) => {
       return index == correctAnswerIndex
     })
+    correctAnswerIndex = 0
+    return answers
   }
 
-  const wrongAnswers = answers.filter(
-    (_, index) => index !== correctAnswerIndex
-  )
+  const correctAnswerText = answers[correctAnswerIndex]
 
-  const numberToRemove = Math.floor(wrongAnswers.length / 2)
-  const optionsToRemove = []
+  let wrongAnswerIndexArr = answers.map((_, index) => {
+    if (index !== correctAnswerIndex) return index
+  })
+  wrongAnswerIndexArr = wrongAnswerIndexArr.filter((item) => item != null)
 
-  while (optionsToRemove.length < numberToRemove) {
-    const randomIndex = Math.floor(Math.random() * wrongAnswers.length)
-    if (!optionsToRemove.includes(randomIndex)) {
-      optionsToRemove.push(randomIndex)
+  const numberToRemove = Math.floor(wrongAnswerIndexArr.length / 2)
+  const shuffledArray = wrongAnswerIndexArr.sort(() => Math.random() - 0.5)
+  shuffledArray.slice(0, numberToRemove)
+
+  answers.forEach((answer, index) => {
+    if (wrongAnswerIndexArr.includes(index)) {
+      answers.splice(index, 1)
+    }
+  })
+
+  // update correct answer index
+  for (let i = 0; i < answers.length; i++) {
+    if (answers[i] == correctAnswerText) {
+      correctAnswerIndex = i
     }
   }
-
-  optionsToRemove.forEach((index) => {
-    answers.splice(index, 1)
-  })
 
   return answers
 }
