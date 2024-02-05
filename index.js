@@ -8,7 +8,10 @@ const errorText = document.getElementById("error-text")
 const currentScoreContainer = document.getElementById("current-score-container")
 const correctAnswerDiv = document.getElementById("correct-answer")
 const wrongAnswerDiv = document.getElementById("wrong-answer")
-const nextQuestionButton = document.getElementById("next-question-button")
+const nextBtnsDiv = document.getElementById("next-btns")
+const nextQuestionButtons = nextBtnsDiv.querySelectorAll("button")
+const nextDifficultyChoser = document.getElementById("next-difficulty-choser")
+
 const quitButton = document.getElementById("quit-button")
 const startButton = document.getElementById("start-button")
 const cutHalfWrongButton = document.getElementById("cutHalfWrongButton")
@@ -19,9 +22,8 @@ const leaderBoardOl = document.getElementById("leader-board-container")
 const leaderBoardSection = document.getElementById("leader-board")
 const questionCategoryDiv = document.getElementById("question-category")
 const bonusCategoryDiv = document.getElementById("bonus-category")
-const chooseNextDifficultySection = document.getElementById(
-  "choose-next-difficulty"
-)
+
+const alreadyFetchedQId = []
 
 let options
 
@@ -62,7 +64,9 @@ async function init() {
   startButton.addEventListener("click", handleStartBtnClick)
   pauseTimerBtn.addEventListener("click", handlePauseBtnClick)
   quitButton.addEventListener("click", handleQuitBtnClick)
-  nextQuestionButton.addEventListener("click", handleContinueBtnClick)
+  nextQuestionButtons.forEach((btn) =>
+    btn.addEventListener("click", (e) => handleContinueBtnClick(e))
+  )
   cutHalfWrongButton.addEventListener("click", handleCutWrongBtnClick)
 }
 
@@ -82,7 +86,9 @@ If you input other number, we regard it as you give up the chance of bonus score
     `
   )
   bonusCategory = categorySet[userChoiceForBonus - 1]
-  bonusCategoryDiv.innerHTML = `Bonus Category: ${bonusCategory}`
+  bonusCategoryDiv.innerHTML = bonusCategory
+    ? `Bonus Category: ${bonusCategory}`
+    : ""
   // startButton is disabled before we get the choice from user
   startButton.disabled = false
 }
@@ -163,22 +169,36 @@ const startCountdown = (seconds) => {
   renderCountdown(remainingSeconds)
 }
 
-function chooseQuestionDifficulty() {
-  const difficultyText = [...scoreOfDifficulty.keys()]
-  console.log({ difficultyText })
-  chooseQuestionDifficulty.innerHTML = ""
-  difficultyText.forEach((text) => {
-    const difficultyButton = document.createElement("button")
-    difficultyButton.innerHTML = text
-    difficultyButton.addEventListener("click", (e) => {
-      nextQdifficultyParam = e.target.innerHTML
-    })
-    chooseNextDifficultySection.appendChild(difficultyButton)
-  })
-}
+// function chooseQuestionDifficulty() {
+//   const difficultyText = [...scoreOfDifficulty.keys()]
+//   console.log({ difficultyText })
+//   chooseNextDifficultySection.innerHTML = ""
+//   difficultyText.forEach((text) => {
+//     const difficultyButton = document.createElement("button")
+//     difficultyButton.setAttribute("id", "difficulty-button")
+//     difficultyButton.innerHTML = text
+//     chooseNextDifficultySection.appendChild(difficultyButton)
+//   })
+
+//   const diffButtons = document.querySelectorAll("#difficulty-button")
+//   diffButtons.forEach((btn) => {
+//     btn.addEventListener("click", (e) => {
+//       handleClickNextDifficulty(e)
+//     })
+//   })
+
+//   function handleClickNextDifficulty(e) {
+//     nextQdifficultyParam = e.target.innerHTML
+//     e.target.style.backgroundColor = "black"
+//     e.target.style.color = "white"
+//     questionTextContainer.style.display = "block"
+//     optionsContainer.style.display = "block"
+
+//     diffButtons.forEach((button) => (button.pointerEvents = "none"))
+//   }
+// }
 
 async function getQuestion() {
-  chooseQuestionDifficulty()
   let data
   let flag = 0
   let questionsArr
@@ -195,8 +215,10 @@ async function getQuestion() {
           correctAnswerNumber += 1
         }
       })
-
-      if (correctAnswerNumber === 1) {
+      if (
+        correctAnswerNumber === 1 && // question with only one correct answer
+        !alreadyFetchedQId.includes(questionsArr[0].id) // ensures a new question
+      ) {
         flag = 1
       }
     } catch (error) {
@@ -205,6 +227,7 @@ async function getQuestion() {
   }
 
   questionObj = questionsArr[0]
+  alreadyFetchedQId.push(questionObj.id)
   console.log({ questionObj })
   questionCategory = questionObj.category
   questionCategrory = questionObj?.category
@@ -257,7 +280,8 @@ function handleAnswerClick(optionIndex) {
       checkWrongAnswerNum()
     })
   }
-  nextQuestionButton.style.display = "block"
+
+  nextDifficultyChoser.style.display = "block"
   cutHalfWrongButton.disabled = true
   pauseTimerBtn.disabled = true
 }
@@ -300,7 +324,8 @@ function checkWrongAnswerNum() {
 
     setTimeout(() => {
       // ensure that the display property is set after other changes in the DOM have taken effect
-      nextQuestionButton.style.display = "none"
+
+      nextDifficultyChoser.style.display = "none"
     })
     resetStatus()
     renderLeaderBoard()
@@ -352,7 +377,8 @@ function resetStatus() {
   startButton.innerHTML = "Start Game"
 
   quitButton.disabled = true
-  nextQuestionButton.style.display = "none"
+  nextDifficultyChoser.style.display = "none"
+
   cutHalfWrongButton.innerHTML = "Cut half wrong answers 1 / 1"
   pauseTimerBtn.innerHTML = "Pause timer 1 / 1"
 
@@ -519,7 +545,8 @@ function handleQuitBtnClick() {
   renderLeaderBoard()
 }
 
-async function handleContinueBtnClick() {
+async function handleContinueBtnClick(e) {
+  nextQdifficultyParam = e.target.innerHTML
   await getQuestion()
   renderQuestions(questionText, shownAnswerOptions)
   if (!isDeleteAnswerUsed) {
@@ -530,7 +557,7 @@ async function handleContinueBtnClick() {
     pauseTimerBtn.disabled = false
   }
 
-  nextQuestionButton.style.display = "none"
+  nextDifficultyChoser.style.display = "none"
 }
 
 async function handleCutWrongBtnClick() {

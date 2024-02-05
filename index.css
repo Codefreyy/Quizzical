@@ -116,10 +116,6 @@ button:disabled:hover {
   opacity: 80%;
 }
 
-#next-question-button {
-  display: none;
-}
-
 .timer {
   display: flex;
   justify-content: center;
@@ -162,4 +158,19 @@ header {
 #choose-next-difficulty {
   display: flex;
   gap: 5px;
+}
+
+#next-difficulty-choser {
+  gap: 10px;
+  display: none;
+}
+
+#next-btns {
+  margin-top: 10px;
+  display: flex;
+  gap: 4px;
+}
+
+#next-btns button {
+  padding: 4px;
 }
