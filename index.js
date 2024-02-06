@@ -11,7 +11,6 @@ const wrongAnswerDiv = document.getElementById("wrong-answer")
 const nextBtnsDiv = document.getElementById("next-btns")
 const nextQuestionButtons = nextBtnsDiv.querySelectorAll("button")
 const nextDifficultyChoser = document.getElementById("next-difficulty-choser")
-
 const quitButton = document.getElementById("quit-button")
 const startButton = document.getElementById("start-button")
 const cutHalfWrongButton = document.getElementById("cutHalfWrongButton")
@@ -23,60 +22,154 @@ const leaderBoardSection = document.getElementById("leader-board")
 const questionCategoryDiv = document.getElementById("question-category")
 const bonusCategoryDiv = document.getElementById("bonus-category")
 
-const categoriesNumberForBonus = 4
-const wrongAnswerCeilNumber = 3
-const countDownTime = 30
-
-const alreadyFetchedQId = []
-
-let options
-
 // constants
 const scoreOfDifficulty = new Map([
   ["Easy", 1],
   ["Medium", 2],
   ["Hard", 3],
 ])
+const categoriesNumberForBonus = 4
+const wrongAnswerCeilNumber = 3
+const countDownTime = 30
+const alreadyFetchedQId = []
 
-// state management
+// game state
+let username
 let questionObj
-let questionCategrory
 let questionDifficulty
+let questionCategory
+let bonusCategory
 let questionText
+let nextQdifficultyParam = ""
+let options = []
+let shownOptions = []
+let leaderBoard = []
+
 let currentScore = 0
 let bestScore = 0
 let wrongAnswerNum = 0
 let correctAnswerNum = 0
-let correctAnswerIndex
-let questionCategory
-let bonusCategory
+let correctAnswerIndex = -1
+
 let isDeleteAnswerUsed = false
 let isPauseUsed = false
-let shownAnswerOptions
 let remainingSeconds
-let leaderBoard = []
 let timer
-let username
-let nextQdifficultyParam = ""
+
+// event listeners
+startButton.addEventListener("click", handleStartBtnClick)
+pauseTimerBtn.addEventListener("click", handlePauseBtnClick)
+quitButton.addEventListener("click", handleQuitBtnClick)
+cutHalfWrongButton.addEventListener("click", handleCutWrongBtnClick)
+nextQuestionButtons.forEach((btn) =>
+  btn.addEventListener("click", (e) => handleContinueBtnClick(e))
+)
 
 async function init() {
   getUserName()
-  fetchLocalScores()
   await getBonusCategory()
-
-  startButton.addEventListener("click", handleStartBtnClick)
-  pauseTimerBtn.addEventListener("click", handlePauseBtnClick)
-  quitButton.addEventListener("click", handleQuitBtnClick)
-  nextQuestionButtons.forEach((btn) =>
-    btn.addEventListener("click", (e) => handleContinueBtnClick(e))
-  )
-  cutHalfWrongButton.addEventListener("click", handleCutWrongBtnClick)
+  getLocalScores()
 }
 
 init()
 
+async function getQuestion() {
+  let data
+  let questionsArr
+  let flag = false
+  // When there is only one correct answer to a question and it has not appeared before, the flag will become true
+  while (!flag) {
+    try {
+      data = await fetch(
+        `https://quizapi.io/api/v1/questions?limit=1&difficulty=${nextQdifficultyParam}&apiKey=${apiKey}`
+      )
+      questionsArr = await data.json()
+      let correctAnswerNumber = 0
+      Object.values(questionsArr[0].correct_answers).forEach((item, index) => {
+        if (item == "true") {
+          correctAnswerIndex = index
+          correctAnswerNumber += 1
+        }
+      })
+      if (
+        correctAnswerNumber === 1 &&
+        !alreadyFetchedQId.includes(questionsArr[0].id)
+      ) {
+        flag = true
+      }
+    } catch (error) {
+      console.error("Error fetching the question:", error)
+    }
+  }
+
+  questionObj = questionsArr[0]
+  questionText = questionObj.question
+  questionCategory = questionObj.category
+  questionDifficulty = questionObj?.difficulty
+  // track already fetch questions
+  alreadyFetchedQId.push(questionObj.id)
+
+  const answers = Object.values(questionObj.answers)
+  shownOptions = answers.filter((item) => item !== null) // all options
+
+  renderQuestions(questionText, shownOptions)
+  clearInterval(timer)
+  startCountdown(countDownTime)
+}
+
+function renderQuestions(questionText, answers) {
+  // clear last question content
+  questionTextContainer.textContent = ""
+  optionsContainer.innerHTML = ""
+
+  if (questionCategory) {
+    questionCategoryDiv.textContent = questionCategory
+    questionCategoryDiv.style.display = "block"
+  } else {
+    questionCategoryDiv.style.display = "none"
+  }
+
+  questionTextContainer.textContent =
+    questionText + ` (${questionObj.difficulty})`
+
+  for (let i = 0; i < answers.length; i++) {
+    const option = document.createElement("div")
+    option.setAttribute("class", "option")
+    option.setAttribute("id", i)
+    option.setAttribute("role", "button")
+    option.innerText = answers[i]
+    optionsContainer.appendChild(option)
+  }
+
+  addEventToEachOption()
+}
+
+function renderLeaderBoard() {
+  leaderBoardOl.innerHTML = ""
+  if (!leaderBoard || !leaderBoard?.length) {
+    return
+  }
+
+  leaderBoardSection.style.display = "block"
+
+  leaderBoard.sort((a, b) => b.score - a.score)
+
+  console.log({ leaderBoard })
+  const displayBoard = leaderBoard.slice(0, 10)
+
+  displayBoard.forEach((user) => {
+    const li = document.createElement("li")
+    li.textContent = `${user.username}: ${user.score}`
+    if (user.username == username) {
+      li.style.color = "green"
+      li.textContent = `${user.username}: ${user.score} (You)`
+    }
+    leaderBoardOl.appendChild(li)
+  })
+}
+
 async function getBonusCategory() {
-  const categorySet = await fetchRandomCategories()
+  const categorySet = await getRandomCategories()
   userChoiceForBonus = prompt(
     `Please choose your bonus category from below using number 1, 2, 3, 4. If you answer this category of questions correctly, you will receive double points.
 
@@ -92,22 +185,19 @@ If you input other number, we regard it as you give up the chance of bonus score
   bonusCategoryDiv.textContent = bonusCategory
     ? `Bonus Category: ${bonusCategory}`
     : ""
-  // startButton is disabled before we get the choice from user
   startButton.disabled = false
 }
 
-async function fetchRandomCategories() {
+async function getRandomCategories() {
   const categorySet = new Set()
 
   while (categorySet.size < categoriesNumberForBonus) {
     const res = await fetch(
-      `https://quizapi.io/api/v1/questions?limit=8&apiKey=${apiKey}`
+      `https://quizapi.io/api/v1/questions?limit=5&apiKey=${apiKey}`
     )
     const data = await res.json()
-    console.log({ data })
     data.forEach((question) => {
       if (question.category) {
-        console.log(question.category)
         categorySet.add(question.category)
       }
     })
@@ -122,7 +212,7 @@ function getUserName() {
   usernameSpan.textContent = username
 }
 
-function fetchLocalScores() {
+function getLocalScores() {
   if (localStorage.getItem(username)) {
     bestScoreSpan.textContent = localStorage.getItem(username)
     bestScore = localStorage.getItem(username)
@@ -130,7 +220,202 @@ function fetchLocalScores() {
   leaderBoard = JSON.parse(localStorage.getItem("leaderBoard"))
 }
 
-// count down https://medium.com/weekly-webtips/creating-a-precise-countdown-with-vanilla-js-cdc44c0483fa
+function handleAnswerClick(optionIndex) {
+  clearInterval(timer)
+  const correctOption = document.getElementById(correctAnswerIndex)
+  const userChosenOption = document.getElementById(optionIndex)
+  disableOptions()
+  highlightOption(userChosenOption)
+
+  // user chose correct answer
+  if (optionIndex == correctAnswerIndex) {
+    updateSuccessStatus()
+    highlightOption(correctOption, true)
+  } else {
+    // user chose wrong answer
+    highlightOption(correctOption, true)
+    updateFailStatus()
+    setTimeout(() => {
+      // so that the alert will happen after the user see the answer result (highligh option)
+      checkWrongAnswerNum()
+    })
+  }
+
+  nextDifficultyChoser.style.display = "block"
+  cutHalfWrongButton.disabled = true
+  pauseTimerBtn.disabled = true
+}
+
+function addEventToEachOption() {
+  options = document.querySelectorAll(".option")
+  options.forEach((option, index) => {
+    option.addEventListener("click", () => handleAnswerClick(index))
+  })
+}
+
+function checkWrongAnswerNum() {
+  if (wrongAnswerNum >= wrongAnswerCeilNumber) {
+    alert(
+      "Game over! You have answered three questions wrong. Your score has been cleared."
+    )
+
+    currentScore = 0
+
+    bestScore = Math.max(bestScore, currentScore)
+    bestScoreSpan.textContent = bestScore
+    localStorage.setItem(username, bestScore)
+
+    // if leadboard does not exist
+    if (!localStorage.getItem("leaderBoard")) {
+      if (!leaderBoard) {
+        leaderBoard = [{ username, score: bestScore }]
+      } else {
+        leaderBoard.push({ username, score: bestScore })
+      }
+      localStorage.setItem("leaderBoard", JSON.stringify(leaderBoard))
+      // if leaderboard exists
+    } else if (bestScore == currentScore) {
+      leaderBoard.forEach((user) => {
+        if (user.username == username) {
+          user.score = bestScore
+        }
+      })
+      let board = JSON.parse(localStorage.getItem("leaderBoard"))
+      board.forEach((item) => {
+        if (item.username == username) {
+          item.score = bestScore
+        }
+      })
+      localStorage.setItem("leaderBoard", JSON.stringify(board))
+    }
+
+    currentScoreContainer.textContent = currentScore
+
+    setTimeout(() => {
+      // ensure that the display property is set after other changes in the DOM have taken effect
+      nextDifficultyChoser.style.display = "none"
+    })
+    resetStatus()
+    renderLeaderBoard()
+  }
+}
+
+function updateSuccessStatus() {
+  correctAnswerNum += 1
+  if (questionCategory == bonusCategory) {
+    const addScore = scoreOfDifficulty.get(questionDifficulty) * 2
+    currentScore += addScore
+  } else {
+    currentScore += scoreOfDifficulty.get(questionDifficulty)
+  }
+  currentScoreContainer.textContent = currentScore
+  correctAnswerDiv.textContent = correctAnswerNum
+}
+
+function updateFailStatus() {
+  wrongAnswerNum += 1
+  wrongAnswerDiv.textContent = wrongAnswerNum
+}
+
+function resetStatus() {
+  optionsContainer.textContent = "⬇️ Click to start"
+  questionTextContainer.textContent = ""
+  questionCategoryDiv.style.display = "none"
+
+  questionCategory = ""
+  questionDifficulty = ""
+  questionObj = {}
+  shownOptions = []
+
+  currentScore = 0
+  currentScoreContainer.textContent = 0
+
+  wrongAnswerNum = 0
+  wrongAnswerDiv.textContent = 0
+
+  correctAnswerNum = 0
+  correctAnswerDiv.textContent = 0
+  correctAnswerIndex = 0
+
+  // buttons
+  cutHalfWrongButton.disabled = true
+  pauseTimerBtn.disabled = true
+
+  startButton.style.display = "block"
+  startButton.textContent = "Start Game"
+
+  quitButton.disabled = true
+  nextDifficultyChoser.style.display = "none"
+
+  cutHalfWrongButton.textContent = "Cut half wrong answers 1 / 1"
+  pauseTimerBtn.textContent = "Pause timer 1 / 1"
+
+  isDeleteAnswerUsed = false
+  isPauseUsed = false
+
+  clearInterval(timer)
+}
+
+function cutHalfWrongAnswers(answers) {
+  if (!answers || !answers.length) return
+
+  if (answers.length == 2) {
+    answers = answers.filter((_, index) => {
+      return index == correctAnswerIndex
+    })
+    correctAnswerIndex = 0
+    return answers
+  }
+
+  const correctAnswerText = answers[correctAnswerIndex]
+
+  let wrongAnswerIndexArr = answers.map((_, index) => {
+    if (index !== correctAnswerIndex) return index
+  })
+  wrongAnswerIndexArr = wrongAnswerIndexArr.filter((item) => item != null)
+
+  const numberToRemove = Math.floor(wrongAnswerIndexArr.length / 2)
+  const shuffledArray = shuffleArr(wrongAnswerIndexArr)
+  shuffledArray.slice(0, numberToRemove)
+
+  answers.forEach((_, index) => {
+    if (wrongAnswerIndexArr.includes(index)) {
+      answers.splice(index, 1)
+    }
+  })
+
+  // update correct answer index
+  for (let i = 0; i < answers.length; i++) {
+    if (answers[i] == correctAnswerText) {
+      correctAnswerIndex = i
+    }
+  }
+
+  return answers
+}
+
+function highlightOption(option, isCorrect = false) {
+  if (isCorrect) {
+    option.style.border = "2px solid black"
+    option.style.fontWeight = "bold"
+    option.style.backgroundColor = "green"
+    option.style.color = "white"
+  } else {
+    option.style.border = "2px solid #000"
+    option.style.fontWeight = "bold"
+    option.style.backgroundColor = "#f8fbff"
+    option.style.color = "#636974"
+  }
+}
+
+function disableOptions() {
+  // in case the user chooses the same correct answer and get multiple scores
+  options.forEach((option) => {
+    option.style.pointerEvents = "none"
+  })
+}
+
+// timer https://medium.com/weekly-webtips/creating-a-precise-countdown-with-vanilla-js-cdc44c0483fa
 const formatMinutesSeconds = (seconds) => {
   const thisDate = new Date(seconds * 1000)
   if (thisDate.getMinutes()) {
@@ -162,7 +447,7 @@ const startCountdown = (seconds) => {
 
           if (wrongAnswerNum < 3) {
             await getQuestion()
-            renderQuestions(questionText, shownAnswerOptions)
+            renderQuestions(questionText, shownOptions)
           }
         }
       })
@@ -172,297 +457,10 @@ const startCountdown = (seconds) => {
   renderCountdown(remainingSeconds)
 }
 
-async function getQuestion() {
-  let data
-  let flag = 0
-  let questionsArr
-  while (!flag) {
-    try {
-      data = await fetch(
-        `https://quizapi.io/api/v1/questions?limit=1&difficulty=${nextQdifficultyParam}&apiKey=${apiKey}`
-      )
-      questionsArr = await data.json()
-      let correctAnswerNumber = 0
-      Object.values(questionsArr[0].correct_answers).forEach((item, index) => {
-        if (item == "true") {
-          correctAnswerIndex = index
-          correctAnswerNumber += 1
-        }
-      })
-      if (
-        correctAnswerNumber === 1 && // question with only one correct answer
-        !alreadyFetchedQId.includes(questionsArr[0].id) // ensures a new question
-      ) {
-        flag = 1
-      }
-    } catch (error) {
-      console.error("Error fetching the question:", error)
-    }
-  }
-
-  questionObj = questionsArr[0]
-  alreadyFetchedQId.push(questionObj.id)
-  console.log({ questionObj })
-  questionCategory = questionObj.category
-  questionCategrory = questionObj?.category
-  questionDifficulty = questionObj?.difficulty
-  const answers = Object.values(questionObj.answers)
-  shownAnswerOptions = answers.filter((item) => item !== null) // all options
-  questionText = questionObj.question
-
-  // render the question and answers
-  renderQuestions(questionText, shownAnswerOptions)
-  if (timer) {
-    clearInterval(timer)
-  }
-  startCountdown(countDownTime)
-}
-
-function listenAnswerChoice() {
-  options = document.querySelectorAll(".option")
-  options.forEach((option, index) => {
-    option.addEventListener("click", () => handleAnswerClick(index))
-  })
-}
-
-function disableOptions() {
-  // in case the user chooses the same correct answer and get multiple scores
-  options.forEach((option) => {
-    option.style.pointerEvents = "none"
-  })
-}
-
-function handleAnswerClick(optionIndex) {
-  clearInterval(timer)
-  const correctOption = document.getElementById(correctAnswerIndex)
-  const userChosenOption = document.getElementById(optionIndex)
-  disableOptions()
-  highlightOption(userChosenOption)
-
-  // user chose correct answer
-  if (optionIndex == correctAnswerIndex) {
-    updateSuccessStatus()
-    highlightOption(correctOption, true)
-  } else {
-    // user chose wrong answer
-    highlightOption(correctOption, true)
-    updateFailStatus()
-    setTimeout(() => {
-      // so that the alert will happen after the user see the answer result (highligh option)
-      checkWrongAnswerNum()
-    })
-  }
-
-  nextDifficultyChoser.style.display = "block"
-  cutHalfWrongButton.disabled = true
-  pauseTimerBtn.disabled = true
-}
-
-function checkWrongAnswerNum() {
-  if (wrongAnswerNum >= wrongAnswerCeilNumber) {
-    alert(
-      "Game over! You have answered three questions wrong. Your score has been cleared."
-    )
-
-    currentScore = 0
-
-    bestScore = Math.max(bestScore, currentScore)
-    bestScoreSpan.textContent = bestScore
-    localStorage.setItem(username, bestScore)
-
-    if (!localStorage.getItem("leaderBoard")) {
-      if (!leaderBoard) {
-        leaderBoard = [{ username, score: bestScore }]
-      } else {
-        leaderBoard.push({ username, score: bestScore })
-      }
-      localStorage.setItem("leaderBoard", JSON.stringify(leaderBoard))
-    } else if (bestScore == currentScore) {
-      leaderBoard.forEach((user) => {
-        if (user.username == username) {
-          user.score = bestScore
-        }
-      })
-      let board = JSON.parse(localStorage.getItem("leaderBoard"))
-      board.forEach((item) => {
-        if (item.username == username) {
-          item.score = bestScore
-        }
-      })
-      localStorage.setItem("leaderBoard", JSON.stringify(board))
-    }
-
-    currentScoreContainer.textContent = currentScore
-
-    setTimeout(() => {
-      // ensure that the display property is set after other changes in the DOM have taken effect
-
-      nextDifficultyChoser.style.display = "none"
-    })
-    resetStatus()
-    renderLeaderBoard()
-  }
-}
-
-function updateSuccessStatus() {
-  correctAnswerNum += 1
-  if (questionCategrory == bonusCategory) {
-    const addScore = scoreOfDifficulty.get(questionDifficulty) * 2
-    currentScore += addScore
-  } else {
-    currentScore += scoreOfDifficulty.get(questionDifficulty)
-  }
-  currentScoreContainer.textContent = currentScore
-  correctAnswerDiv.textContent = correctAnswerNum
-}
-
-function updateFailStatus() {
-  wrongAnswerNum += 1
-  wrongAnswerDiv.textContent = wrongAnswerNum
-}
-
-function resetStatus() {
-  optionsContainer.textContent = "⬇️ Click to start"
-  questionTextContainer.textContent = ""
-  questionCategoryDiv.style.display = "none"
-
-  questionCategrory = ""
-  questionDifficulty = ""
-  questionObj = {}
-  shownAnswerOptions = []
-
-  currentScore = 0
-  currentScoreContainer.textContent = 0
-
-  wrongAnswerNum = 0
-  wrongAnswerDiv.textContent = 0
-
-  correctAnswerNum = 0
-  correctAnswerDiv.textContent = 0
-  correctAnswerIndex = 0
-
-  // buttons
-  cutHalfWrongButton.disabled = true
-  pauseTimerBtn.disabled = true
-
-  startButton.style.display = "block"
-  startButton.textContent = "Start Game"
-
-  quitButton.disabled = true
-  nextDifficultyChoser.style.display = "none"
-
-  cutHalfWrongButton.textContent = "Cut half wrong answers 1 / 1"
-  pauseTimerBtn.textContent = "Pause timer 1 / 1"
-
-  isDeleteAnswerUsed = false
-  isPauseUsed = false
-
-  clearInterval(timer)
-}
-
-function highlightOption(option, isCorrect = false) {
-  if (isCorrect) {
-    option.style.border = "2px solid black"
-    option.style.fontWeight = "bold"
-    option.style.backgroundColor = "green"
-    option.style.color = "white"
-  } else {
-    option.style.border = "2px solid #000"
-    option.style.fontWeight = "bold"
-    option.style.backgroundColor = "#f8fbff"
-    option.style.color = "#636974"
-  }
-}
-
-function renderQuestions(questionText, answers) {
-  // clear last question content
-  questionTextContainer.textContent = ""
-  optionsContainer.innerHTML = ""
-  if (questionCategory) {
-    questionCategoryDiv.textContent = questionCategory
-    questionCategoryDiv.style.display = "block"
-  } else {
-    questionCategoryDiv.style.display = "none"
-  }
-  questionTextContainer.textContent =
-    questionText + ` (${questionObj.difficulty})`
-  for (let i = 0; i < answers.length; i++) {
-    const option = document.createElement("div")
-    option.setAttribute("class", "option")
-    option.setAttribute("id", i)
-    option.setAttribute("role", "button")
-    option.innerText = answers[i]
-    optionsContainer.appendChild(option)
-  }
-
-  listenAnswerChoice()
-}
-
-function cutHalfWrongAnswers(answers) {
-  if (!answers || !answers.length) return
-
-  if (answers.length == 2) {
-    answers = answers.filter((_, index) => {
-      return index == correctAnswerIndex
-    })
-    correctAnswerIndex = 0
-    return answers
-  }
-
-  const correctAnswerText = answers[correctAnswerIndex]
-
-  let wrongAnswerIndexArr = answers.map((_, index) => {
-    if (index !== correctAnswerIndex) return index
-  })
-  wrongAnswerIndexArr = wrongAnswerIndexArr.filter((item) => item != null)
-
-  const numberToRemove = Math.floor(wrongAnswerIndexArr.length / 2)
-  const shuffledArray = wrongAnswerIndexArr.sort(() => Math.random() - 0.5)
-  shuffledArray.slice(0, numberToRemove)
-
-  answers.forEach((answer, index) => {
-    if (wrongAnswerIndexArr.includes(index)) {
-      answers.splice(index, 1)
-    }
-  })
-
-  // update correct answer index
-  for (let i = 0; i < answers.length; i++) {
-    if (answers[i] == correctAnswerText) {
-      correctAnswerIndex = i
-    }
-  }
-
-  return answers
-}
-
-function renderLeaderBoard() {
-  leaderBoardOl.innerHTML = ""
-  if (!leaderBoard || !leaderBoard?.length) {
-    return
-  }
-
-  leaderBoardSection.style.display = "block"
-
-  leaderBoard.sort((a, b) => b.score - a.score)
-
-  console.log({ leaderBoard })
-  const displayBoard = leaderBoard.slice(0, 10)
-
-  displayBoard.forEach((user) => {
-    const li = document.createElement("li")
-    li.textContent = `${user.username}: ${user.score}`
-    if (user.username == username) {
-      li.style.color = "green"
-      li.textContent = `${user.username}: ${user.score} (You)`
-    }
-    leaderBoardOl.appendChild(li)
-  })
-}
-
+// event hanlders
 async function handleStartBtnClick() {
   await getQuestion()
-  renderQuestions(questionText, shownAnswerOptions)
+  renderQuestions(questionText, shownOptions)
   leaderBoardSection.style.display = "none"
   startButton.style.display = "none"
   cutHalfWrongButton.disabled = false
@@ -520,7 +518,7 @@ function handleQuitBtnClick() {
 async function handleContinueBtnClick(e) {
   nextQdifficultyParam = e.target.innerHTML
   await getQuestion()
-  renderQuestions(questionText, shownAnswerOptions)
+  renderQuestions(questionText, shownOptions)
   if (!isDeleteAnswerUsed) {
     cutHalfWrongButton.disabled = false
   }
@@ -537,8 +535,30 @@ async function handleCutWrongBtnClick() {
   if (!isDeleteAnswerUsed) {
     isDeleteAnswerUsed = true
     // cut half wrong answer
-    const res = cutHalfWrongAnswers(shownAnswerOptions)
+    const res = cutHalfWrongAnswers(shownOptions)
     renderQuestions(questionText, res)
     cutHalfWrongButton.textContent = `Cut half wrong answers 0 / 1`
   }
+}
+
+// utils
+// https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
+function shuffleArr(array) {
+  let currentIndex = array.length,
+    randomIndex
+
+  // While there remain elements to shuffle.
+  while (currentIndex > 0) {
+    // Pick a remaining element.
+    randomIndex = Math.floor(Math.random() * currentIndex)
+    currentIndex--
+
+    // And swap it with the current element.
+    ;[array[currentIndex], array[randomIndex]] = [
+      array[randomIndex],
+      array[currentIndex],
+    ]
+  }
+
+  return array
 }
