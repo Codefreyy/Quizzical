@@ -4,7 +4,6 @@ const apiKey = "mzlGGLJ2ByLHPgC1cYYPqkSgQER3zJsfjL1eDQXK"
 // get dom elements
 const questionTextContainer = document.getElementById("question-text")
 const optionsContainer = document.getElementById("options-container")
-const errorText = document.getElementById("error-text")
 const currentScoreContainer = document.getElementById("current-score-container")
 const correctAnswerDiv = document.getElementById("correct-answer")
 const wrongAnswerDiv = document.getElementById("wrong-answer")
@@ -152,7 +151,14 @@ function renderLeaderBoard() {
 
   leaderBoardSection.style.display = "block"
 
-  leaderBoard.sort((a, b) => b.score - a.score)
+  leaderBoard.sort((a, b) => {
+    console.log({ a, b })
+    if (a.score !== b.score) {
+      return b.score - a.score
+    } else {
+      return a.username.localeCompare(b.username)
+    }
+  })
 
   console.log({ leaderBoard })
   const displayBoard = leaderBoard.slice(0, 10)
@@ -170,17 +176,34 @@ function renderLeaderBoard() {
 
 async function getBonusCategory() {
   const categorySet = await getRandomCategories()
-  userChoiceForBonus = prompt(
-    `Please choose your bonus category from below using number 1, 2, 3, 4. If you answer this category of questions correctly, you will receive double points.
+  let userChoiceForBonus
 
-    1. ${categorySet[0]}
-    2. ${categorySet[1]}
-    3. ${categorySet[2]}
-    4. ${categorySet[3]}
+  while (
+    !userChoiceForBonus ||
+    isNaN(userChoiceForBonus) ||
+    userChoiceForBonus < 1 ||
+    userChoiceForBonus > categoriesNumberForBonus
+  ) {
+    userChoiceForBonus = prompt(
+      `Please choose your bonus category from below using number 1, 2, 3, 4. If you answer this category of questions correctly, you will receive double points.
 
-If you input other number, we regard it as you give up the chance of bonus score.
+      1. ${categorySet[0]}
+      2. ${categorySet[1]}
+      3. ${categorySet[2]}
+      4. ${categorySet[3]}
     `
-  )
+    )
+
+    if (
+      !userChoiceForBonus ||
+      isNaN(userChoiceForBonus) ||
+      userChoiceForBonus < 1 ||
+      userChoiceForBonus > categoriesNumberForBonus
+    ) {
+      alert("Please input a valid number between 1 and 4.")
+    }
+  }
+
   bonusCategory = categorySet[userChoiceForBonus - 1]
   bonusCategoryDiv.textContent = bonusCategory
     ? `Bonus Category: ${bonusCategory}`
@@ -206,8 +229,11 @@ async function getRandomCategories() {
 }
 
 function getUserName() {
-  while (!username) {
+  while (!username || username.trim() === "") {
     username = prompt("Please input username...")
+    if (!username || username.trim() === "") {
+      alert("Username cannot be empty. Please try again.")
+    }
   }
   usernameSpan.textContent = username
 }
