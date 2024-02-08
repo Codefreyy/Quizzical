@@ -52,6 +52,7 @@ let correctAnswerIndex = -1
 
 let isDeleteAnswerUsed = false
 let isPauseUsed = false
+let isGameOngoing = false
 let remainingSeconds
 let timer
 
@@ -102,15 +103,14 @@ async function getQuestion() {
   }
 
   questionObj = questionsArr[0]
-  console.log({ questionObj })
   questionText = questionObj.question
   questionCategory = questionObj.category
   questionDifficulty = questionObj?.difficulty
-  // track already fetch questions
+  // track already fetched questions
   alreadyFetchedQId.push(questionObj.id)
 
   const answers = Object.values(questionObj.answers)
-  shownOptions = answers.filter((item) => item !== null) // all options
+  shownOptions = answers.filter((item) => item !== null)
 
   renderQuestions(questionText, shownOptions)
   clearInterval(timer)
@@ -145,7 +145,7 @@ function renderQuestions(questionText, answers) {
 
   optionsContainer.appendChild(fragment)
 
-  addEventToEachOption()
+  addEventToEachOption() //listen when options are clicked
 }
 
 function renderLeaderBoard() {
@@ -156,6 +156,7 @@ function renderLeaderBoard() {
 
   leaderBoardSection.style.display = "block"
 
+  // sort leaderBoard first by score then by alphabetical order
   leaderBoard.sort((a, b) => {
     if (a.score !== b.score) {
       return b.score - a.score
@@ -182,6 +183,7 @@ async function getBonusCategory() {
   let userChoiceForBonus
 
   while (
+    // ensure users input correct range of number
     !userChoiceForBonus ||
     isNaN(userChoiceForBonus) ||
     userChoiceForBonus < 1 ||
@@ -265,7 +267,7 @@ function handleAnswerClick(optionIndex) {
     highlightOption(correctOption, true)
     updateFailStatus()
     setTimeout(() => {
-      // so that the alert will happen after the user see the answer result (highligh option)
+      // use setTimeout so that the alert will happen after the user see the answer result (highligh option)
       checkWrongAnswerNum()
     })
   }
@@ -286,8 +288,10 @@ function addEventToEachOption() {
 function checkWrongAnswerNum() {
   if (wrongAnswerNum >= wrongAnswerCeilNumber) {
     alert(
-      "Game over! You have answered three questions wrong. Your score has been cleared."
+      "Game over! You have answered three questions incorrectly. Your score has been cleared to zero."
     )
+
+    isGameOngoing = false
 
     currentScore = 0
 
@@ -295,16 +299,18 @@ function checkWrongAnswerNum() {
     bestScoreSpan.textContent = bestScore
 
     localStorage.setItem(username, bestScore)
-    // if leadboard does not exist
+    // if leadboard object does not exist in the localStorage
     if (!localStorage.getItem("leaderBoard")) {
       if (!leaderBoard) {
+        // if local variable leaderBoard is empty
         leaderBoard = [{ username, score: bestScore }]
       } else {
         leaderBoard.push({ username, score: bestScore })
       }
       localStorage.setItem("leaderBoard", JSON.stringify(leaderBoard))
-      // if leaderboard exists
+      // if leaderboard exists in the localStorage
     } else if (bestScore == currentScore) {
+      // and the bestScore can be updated using currentScore
       leaderBoard.forEach((user) => {
         if (user.username == username) {
           user.score = bestScore
@@ -322,7 +328,7 @@ function checkWrongAnswerNum() {
     currentScoreContainer.textContent = currentScore
 
     setTimeout(() => {
-      // ensure that the display property is set after other changes in the DOM have taken effect
+      // use setTimeout to ensure that the display property is set after other changes in the DOM have taken effect
       nextDifficultyChoser.style.display = "none"
     })
     resetStatus()
@@ -367,7 +373,6 @@ function resetStatus() {
   correctAnswerDiv.textContent = 0
   correctAnswerIndex = 0
 
-  // buttons
   cutHalfWrongButton.disabled = true
   pauseTimerBtn.disabled = true
 
@@ -404,6 +409,7 @@ function cutHalfWrongAnswers(answers) {
   })
   wrongAnswerIndexArr = wrongAnswerIndexArr.filter((item) => item != null)
 
+  // randomly choose two index from the wrongAnswerIndexArr
   const numberToRemove = Math.floor(wrongAnswerIndexArr.length / 2)
   const shuffledArray = shuffleArr(wrongAnswerIndexArr)
   shuffledArray.slice(0, numberToRemove)
@@ -474,6 +480,9 @@ const startCountdown = (seconds) => {
           wrongAnswerNum += 1
           wrongAnswerDiv.textContent = wrongAnswerNum
           checkWrongAnswerNum()
+          if (isGameOngoing) {
+            getQuestion()
+          }
         }
       })
     }
@@ -486,11 +495,11 @@ const startCountdown = (seconds) => {
 async function handleStartBtnClick() {
   await getQuestion()
   renderQuestions(questionText, shownOptions)
+  isGameOngoing = true
   leaderBoardSection.style.display = "none"
   startButton.style.display = "none"
   cutHalfWrongButton.disabled = false
   pauseTimerBtn.disabled = false
-  // quitButton.disabled = false
 }
 
 function handlePauseBtnClick() {
@@ -509,6 +518,7 @@ function handlePauseBtnClick() {
 
 function handleQuitBtnClick() {
   alert("Game over")
+  isGameOngoing = false
   bestScore = Math.max(bestScore, currentScore)
   bestScoreSpan.textContent = bestScore
   localStorage.setItem(username, bestScore)
