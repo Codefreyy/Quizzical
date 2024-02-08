@@ -29,7 +29,7 @@ const scoreOfDifficulty = new Map([
 ])
 const categoriesNumberForBonus = 4
 const wrongAnswerCeilNumber = 3
-const countDownTime = 30
+const countDownTime = 5
 const alreadyFetchedQId = []
 
 // game state
@@ -102,6 +102,7 @@ async function getQuestion() {
   }
 
   questionObj = questionsArr[0]
+  console.log({ questionObj })
   questionText = questionObj.question
   questionCategory = questionObj.category
   questionDifficulty = questionObj?.difficulty
@@ -131,14 +132,18 @@ function renderQuestions(questionText, answers) {
   questionTextContainer.textContent =
     questionText + ` (${questionObj.difficulty})`
 
+  const fragment = document.createDocumentFragment()
+
   for (let i = 0; i < answers.length; i++) {
     const option = document.createElement("div")
     option.setAttribute("class", "option")
     option.setAttribute("id", i)
     option.setAttribute("role", "button")
     option.innerText = answers[i]
-    optionsContainer.appendChild(option)
+    fragment.appendChild(option)
   }
+
+  optionsContainer.appendChild(fragment)
 
   addEventToEachOption()
 }
@@ -270,6 +275,7 @@ function handleAnswerClick(optionIndex) {
   nextDifficultyChoser.style.display = "block"
   cutHalfWrongButton.disabled = true
   pauseTimerBtn.disabled = true
+  quitButton.disabled = false
 }
 
 function addEventToEachOption() {
@@ -289,8 +295,8 @@ function checkWrongAnswerNum() {
 
     bestScore = Math.max(bestScore, currentScore)
     bestScoreSpan.textContent = bestScore
-    localStorage.setItem(username, bestScore)
 
+    localStorage.setItem(username, bestScore)
     // if leadboard does not exist
     if (!localStorage.getItem("leaderBoard")) {
       if (!leaderBoard) {
@@ -471,10 +477,10 @@ const startCountdown = (seconds) => {
           wrongAnswerDiv.textContent = wrongAnswerNum
           checkWrongAnswerNum()
 
-          if (wrongAnswerNum < 3) {
-            await getQuestion()
-            renderQuestions(questionText, shownOptions)
-          }
+          // if (wrongAnswerNum < 3) {
+          //   await getQuestion()
+          //   renderQuestions(questionText, shownOptions)
+          // }
         }
       })
     }
@@ -491,7 +497,7 @@ async function handleStartBtnClick() {
   startButton.style.display = "none"
   cutHalfWrongButton.disabled = false
   pauseTimerBtn.disabled = false
-  quitButton.disabled = false
+  // quitButton.disabled = false
 }
 
 function handlePauseBtnClick() {
@@ -554,6 +560,7 @@ async function handleContinueBtnClick(e) {
   }
 
   nextDifficultyChoser.style.display = "none"
+  quitButton.disabled = true
 }
 
 async function handleCutWrongBtnClick() {
