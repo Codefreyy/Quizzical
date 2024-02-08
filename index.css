@@ -23,13 +23,15 @@ body {
   left: 50%;
   transform: translate(-50%, -50%);
   display: flex;
-  gap: 15px;
+  gap: 1em;
   flex-direction: column;
   justify-content: center;
   align-items: stretch;
-  width: 800px;
+  width: 80%;
+  max-width: 800px;
   padding: 20px;
   border-radius: 15px;
+  overflow: hidden;
 }
 
 .status-bar {
@@ -51,6 +53,8 @@ body {
   border-radius: 5px;
   color: white;
   border: 1px solid #636974;
+  flex-shrink: 1;
+  flex-grow: 1;
 }
 
 #options-container {

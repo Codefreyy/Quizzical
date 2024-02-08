@@ -157,7 +157,6 @@ function renderLeaderBoard() {
   leaderBoardSection.style.display = "block"
 
   leaderBoard.sort((a, b) => {
-    console.log({ a, b })
     if (a.score !== b.score) {
       return b.score - a.score
     } else {
@@ -165,7 +164,6 @@ function renderLeaderBoard() {
     }
   })
 
-  console.log({ leaderBoard })
   const displayBoard = leaderBoard.slice(0, 10)
 
   displayBoard.forEach((user) => {
@@ -476,11 +474,6 @@ const startCountdown = (seconds) => {
           wrongAnswerNum += 1
           wrongAnswerDiv.textContent = wrongAnswerNum
           checkWrongAnswerNum()
-
-          // if (wrongAnswerNum < 3) {
-          //   await getQuestion()
-          //   renderQuestions(questionText, shownOptions)
-          // }
         }
       })
     }
