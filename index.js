@@ -392,12 +392,15 @@ function resetStatus() {
 }
 
 function cutHalfWrongAnswers(answers) {
+  console.log("original answer", answers)
   if (!answers || !answers.length) return
 
   if (answers.length == 2) {
     answers = answers.filter((_, index) => {
+      console.log({ correctAnswerIndex })
       return index == correctAnswerIndex
     })
+    console.log({ answers })
     correctAnswerIndex = 0
     return answers
   }
@@ -517,7 +520,7 @@ function handlePauseBtnClick() {
 }
 
 function handleQuitBtnClick() {
-  alert("Game over")
+  alert("Game over!")
   isGameOngoing = false
   bestScore = Math.max(bestScore, currentScore)
   bestScoreSpan.textContent = bestScore
