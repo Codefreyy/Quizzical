@@ -29,7 +29,7 @@ const scoreOfDifficulty = new Map([
 ])
 const categoriesNumberForBonus = 4
 const wrongAnswerCeilNumber = 3
-const countDownTime = 5
+const countDownTime = 30
 const alreadyFetchedQId = []
 
 // game state
