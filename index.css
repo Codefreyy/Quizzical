@@ -168,12 +168,14 @@ button:disabled:hover {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #f8fbff;
+  background: 237, 248, 255;
   border: 1px solid #aaa;
   width: 80px;
   height: 80px;
   margin: 0 15px;
   border-radius: 50%;
+  font-size: 20px;
+  transform: all 0.5s;
 }
 
 header {
