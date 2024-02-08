@@ -392,15 +392,12 @@ function resetStatus() {
 }
 
 function cutHalfWrongAnswers(answers) {
-  console.log("original answer", answers)
   if (!answers || !answers.length) return
 
   if (answers.length == 2) {
     answers = answers.filter((_, index) => {
-      console.log({ correctAnswerIndex })
       return index == correctAnswerIndex
     })
-    console.log({ answers })
     correctAnswerIndex = 0
     return answers
   }
@@ -414,23 +411,15 @@ function cutHalfWrongAnswers(answers) {
 
   // randomly choose two index from the wrongAnswerIndexArr
   const numberToRemove = Math.floor(wrongAnswerIndexArr.length / 2)
-  const shuffledArray = shuffleArr(wrongAnswerIndexArr)
-  shuffledArray.slice(0, numberToRemove)
+  let shuffledArray = shuffleArr(wrongAnswerIndexArr)
+  shuffledArray = shuffledArray.slice(0, numberToRemove)
 
-  answers.forEach((_, index) => {
-    if (wrongAnswerIndexArr.includes(index)) {
-      answers.splice(index, 1)
-    }
-  })
+  const updatedAnswers = answers.filter(
+    (_, index) => !shuffledArray.includes(index)
+  )
 
-  // update correct answer index
-  for (let i = 0; i < answers.length; i++) {
-    if (answers[i] == correctAnswerText) {
-      correctAnswerIndex = i
-    }
-  }
-
-  return answers
+  correctAnswerIndex = updatedAnswers.indexOf(correctAnswerText)
+  return updatedAnswers
 }
 
 function highlightOption(option, isCorrect = false) {

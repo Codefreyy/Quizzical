@@ -37,9 +37,9 @@
 
 ### 5. Time Management
 
-| Feature                         | Test Content                                                                         | Passed? |
-| ------------------------------- | ------------------------------------------------------------------------------------ | ------- |
-| Time Limit                      | Each question has a 30-second time limit for answering.                              | Yes     |
-| Time Exceeding                  | Answers exceeding the time limit are considered incorrect and continue next question | Yes     |
-| Time exceeding causes game ends | The wrong answers exceed three. Everything reset and waiting to restart.             | Yes     |
-| Timer Reset                     | Timer resets and resumes with each new question fetched or user action.              | Yes     |
+| Feature                         | Test Content Passed?                                                                 | Passed |
+| ------------------------------- | ------------------------------------------------------------------------------------ | ------ |
+| Time Limit                      | Each question has a 30-second time limit for answering.                              | Yes    |
+| Time Exceeding                  | Answers exceeding the time limit are considered incorrect and continue next question | Yes    |
+| Time exceeding causes game ends | The wrong answers exceed three. Everything reset and waiting to restart.             | Yes    |
+| Timer Reset                     | Timer resets and resumes with each new question fetched or user action.              | Yes    |
